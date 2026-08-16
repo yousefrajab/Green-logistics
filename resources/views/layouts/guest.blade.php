@@ -9,7 +9,7 @@
 
     <!-- Cairo Font -->
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=cairo:400,500,600,700,800" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=cairo:400,500,600,700,800,900" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -23,31 +23,32 @@
             overflow-x: hidden;
         }
 
-        .login-page {
+        .auth-page {
             min-height: 100vh;
         }
 
         /* خلفية الخريطة */
         .map-background {
             background:
-                radial-gradient(circle at 30% 25%, rgba(16, 185, 129, .18), transparent 25%),
-                radial-gradient(circle at 75% 65%, rgba(6, 182, 212, .14), transparent 25%),
-                linear-gradient(135deg, #031b2b 0%, #05283a 48%, #02141f 100%);
+                radial-gradient(circle at 25% 20%, rgba(16, 185, 129, .20), transparent 30%),
+                radial-gradient(circle at 80% 70%, rgba(6, 182, 212, .16), transparent 32%),
+                linear-gradient(160deg, #03192a 0%, #06283d 45%, #041722 100%);
         }
 
         .map-grid {
             background-image:
                 linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
-            background-size: 38px 38px;
+            background-size: 40px 40px;
+            mask-image: radial-gradient(circle at 50% 40%, black 0%, transparent 80%);
         }
 
         .glass-card {
-            background: rgba(4, 29, 45, .82);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            border: 1px solid rgba(255,255,255,.18);
-            box-shadow: 0 25px 70px rgba(0,0,0,.35);
+            background: rgba(5, 32, 48, .78);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,.14);
+            box-shadow: 0 30px 80px rgba(0,0,0,.4);
         }
 
         .route-line {
@@ -56,57 +57,55 @@
         }
 
         @keyframes routeMove {
-            to {
-                stroke-dashoffset: -180;
-            }
+            to { stroke-dashoffset: -180; }
         }
 
-        .location-pulse {
-            animation: pulseLocation 2s infinite;
+        .pulse-dot {
+            animation: pulseDot 2.2s ease-in-out infinite;
+            transform-origin: center;
         }
 
-        @keyframes pulseLocation {
-            0%, 100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-
-            50% {
-                transform: scale(1.12);
-                opacity: .75;
-            }
+        @keyframes pulseDot {
+            0%, 100% { transform: scale(1); opacity: .9; }
+            50% { transform: scale(1.25); opacity: .35; }
         }
 
-        .truck-float {
-            animation: truckFloat 4s ease-in-out infinite;
+        .fade-up {
+            animation: fadeUp .6s cubic-bezier(.16,1,.3,1) both;
         }
 
-        @keyframes truckFloat {
-            0%, 100% {
-                transform: translateY(0);
-            }
+        .fade-up-delay-1 { animation-delay: .08s; }
+        .fade-up-delay-2 { animation-delay: .16s; }
 
-            50% {
-                transform: translateY(-8px);
-            }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .input-modern {
-            transition: all .2s ease;
+            transition: box-shadow .2s ease, border-color .2s ease;
         }
 
         .input-modern:focus {
             box-shadow: 0 0 0 4px rgba(16, 185, 129, .10);
         }
+
+        .brand-mark {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        [x-cloak] {
+            display: none !important;
+        }
     </style>
 </head>
 
-<body class="bg-gray-50 text-gray-900">
+<body class="bg-slate-50 text-slate-900">
 
-<div class="login-page flex min-h-screen flex-col md:flex-row" dir="ltr">
+<div class="auth-page flex min-h-screen flex-col md:flex-row" dir="ltr">
 
     <!-- =========================================================
-         LEFT SIDE - LOGISTICS MAP
+         LEFT SIDE - LOGISTICS MAP / BRAND
     ========================================================== -->
     <section class="relative hidden min-h-screen overflow-hidden md:flex md:w-1/2 map-background text-white" dir="rtl">
 
@@ -114,13 +113,13 @@
         <div class="map-grid absolute inset-0 opacity-40"></div>
 
         <!-- Glow -->
-        <div class="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl"></div>
-        <div class="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl"></div>
+        <div class="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl"></div>
+        <div class="pointer-events-none absolute bottom-0 right-0 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl"></div>
 
         <!-- ================= MAP SVG ================= -->
         <svg class="absolute inset-0 h-full w-full opacity-80" viewBox="0 0 900 1000" preserveAspectRatio="none">
             <!-- طرق الخريطة -->
-            <g stroke="#294b5d" stroke-width="2" fill="none">
+            <g stroke="#26485c" stroke-width="2" fill="none">
                 <path d="M-50 130 C160 80 260 260 430 170 S700 90 950 150"/>
                 <path d="M-40 260 C160 180 260 400 470 310 S730 240 950 330"/>
                 <path d="M-50 410 C180 350 270 520 430 430 S700 390 950 470"/>
@@ -137,34 +136,40 @@
 
             <!-- مسارات التوزيع -->
             <g fill="none" stroke="#34d399" stroke-width="5" stroke-linecap="round">
-                <path class="route-line" d="M40 690 C180 580 220 350 410 390 C560 420 560 180 850 130"/>
-                <path class="route-line" stroke="#22d3ee" d="M80 230 C250 170 270 300 400 500 C520 680 700 700 870 850"/>
-                <path class="route-line" stroke="#86efac" d="M140 850 C250 700 420 740 500 580 C590 400 720 470 820 300"/>
+                <path id="route-1" class="route-line" d="M40 690 C180 580 220 350 410 390 C560 420 560 180 850 130"/>
+                <path id="route-2" class="route-line" stroke="#22d3ee" d="M80 230 C250 170 270 300 400 500 C520 680 700 700 870 850"/>
+                <path id="route-3" class="route-line" stroke="#86efac" d="M140 850 C250 700 420 740 500 580 C590 400 720 470 820 300"/>
             </g>
+
+            <!-- شاحنة متحركة على المسار -->
+            <circle r="7" fill="#ecfdf5" stroke="#10b981" stroke-width="3">
+                <animateMotion dur="7s" repeatCount="indefinite" rotate="auto"
+                    path="M40 690 C180 580 220 350 410 390 C560 420 560 180 850 130" />
+            </circle>
 
             <!-- نقاط التوزيع -->
             <g>
-                <circle cx="410" cy="390" r="13" fill="#10b981"/>
-                <circle cx="410" cy="390" r="28" fill="#10b981" opacity=".18"/>
+                <circle class="pulse-dot" cx="410" cy="390" r="13" fill="#10b981"/>
+                <circle cx="410" cy="390" r="28" fill="#10b981" opacity=".16"/>
 
-                <circle cx="560" cy="180" r="13" fill="#22d3ee"/>
-                <circle cx="560" cy="180" r="28" fill="#22d3ee" opacity=".18"/>
+                <circle class="pulse-dot" cx="560" cy="180" r="13" fill="#22d3ee"/>
+                <circle cx="560" cy="180" r="28" fill="#22d3ee" opacity=".16"/>
 
-                <circle cx="700" cy="700" r="13" fill="#10b981"/>
-                <circle cx="700" cy="700" r="28" fill="#10b981" opacity=".18"/>
+                <circle class="pulse-dot" cx="700" cy="700" r="13" fill="#10b981"/>
+                <circle cx="700" cy="700" r="28" fill="#10b981" opacity=".16"/>
 
-                <circle cx="220" cy="350" r="13" fill="#60a5fa"/>
-                <circle cx="220" cy="350" r="28" fill="#60a5fa" opacity=".18"/>
+                <circle class="pulse-dot" cx="220" cy="350" r="13" fill="#60a5fa"/>
+                <circle cx="220" cy="350" r="28" fill="#60a5fa" opacity=".16"/>
             </g>
         </svg>
 
-        <!-- ================= TOP BRAND ================= -->
+        <!-- ================= TOP BRAND / CONTENT ================= -->
         <div class="relative z-20 flex w-full flex-col justify-between p-8 xl:p-10">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/15 border border-emerald-400/20">
-                        <svg class="h-7 w-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707.707M12 7a5 5 0 100 10 5 5 0 000-10z" />
+                    <div class="brand-mark flex h-12 w-12 items-center justify-center rounded-xl shadow-lg shadow-emerald-900/40">
+                        <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18M5 21V9h14v12M8 9V5h8v4" />
                         </svg>
                     </div>
                     <div>
@@ -175,14 +180,19 @@
 
                 <!-- Language -->
                 <div class="flex items-center rounded-full border border-white/10 bg-white/5 p-1 text-xs">
-                    <button class="rounded-full px-3 py-1.5 text-white/70">English</button>
-                    <button class="rounded-full bg-emerald-500/20 px-3 py-1.5 font-bold text-emerald-300">عربي</button>
+                    <button type="button" class="rounded-full px-3 py-1.5 text-white/70 transition hover:text-white">English</button>
+                    <button type="button" class="rounded-full bg-emerald-500/20 px-3 py-1.5 font-bold text-emerald-300">عربي</button>
                 </div>
             </div>
 
             <!-- ================= CENTER MESSAGE ================= -->
             <div class="relative z-20 my-auto max-w-xl py-16">
-                <span class="inline-flex items-center rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-1.5 text-xs font-semibold text-emerald-300">مشروع وطني مستدام</span>
+                <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-1.5 text-xs font-semibold text-emerald-300">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    مشروع وطني مستدام
+                </span>
                 <h2 class="mt-5 text-4xl font-extrabold leading-[1.35] xl:text-5xl">معاً نحول الفائض <span class="text-emerald-400">إلى قيمة.</span></h2>
                 <p class="mt-5 max-w-lg text-sm leading-8 text-slate-300">
                     منصة ذكية تربط الجهات المتبرعة بالجمعيات والمندوبين لتقليل الهدر، وإنقاذ الطعام الفائض، وإيصاله إلى مستحقيه بأمان وسرعة.
@@ -261,17 +271,17 @@
          RIGHT SIDE - FORM
     ========================================================== -->
     <main class="flex min-h-screen w-full items-center justify-center bg-white px-6 py-10 sm:px-10 md:w-1/2" dir="rtl">
-        <div class="w-full max-w-xl">
+        <div class="fade-up w-full max-w-xl">
             <!-- Mobile Logo -->
             <div class="mb-10 flex items-center justify-center gap-3 md:hidden">
-                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-lg shadow-emerald-200">
-                    <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707.707" />
+                <div class="brand-mark flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-lg shadow-emerald-200">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18M5 21V9h14v12M8 9V5h8v4" />
                     </svg>
                 </div>
                 <div>
                     <h1 class="text-xl font-extrabold text-slate-900">حفظ النعمة</h1>
-                    <p class="text-xs text-emerald-600">سلسلة لوجستية</p>
+                    <p class="text-xs text-emerald-600">سلسلة لوجستية مستدامة</p>
                 </div>
             </div>
 
