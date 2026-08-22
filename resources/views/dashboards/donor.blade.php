@@ -32,8 +32,8 @@
         
         <div class="space-y-1 relative z-10">
             <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">مبادرة الفنادق الخضراء المستدامة</span>
-            <h3 class="text-md font-bold text-white mt-2">تقرير الأثر المسؤول ومكافحة هدر الغذاء (AI Green Report)</h3>
-            <p class="text-xs text-slate-400 max-w-2xl">دع الذكاء الاصطناعي يحلل إحصائيات تبرعاتك الحقيقية ويصيغ لك تقرير المسؤولية المجتمعية (CSR) الخاص بمنشأتكم فوراً لعرضه ومشاركته أمام عملائكم وحساباتكم الاجتماعية بضغطة زر [4]!</p>
+            <h3 class="text-md font-bold font-extrabold text-slate-800">تقرير الأثر المسؤول ومكافحة هدر الغذاء (AI Green Report)</h3>
+            <p class="text-xs text-slate-800 max-w-2xl">دع الذكاء الاصطناعي يحلل إحصائيات تبرعاتك الحقيقية ويصيغ لك تقرير المسؤولية المجتمعية (CSR) الخاص بمنشأتكم فوراً لعرضه ومشاركته أمام عملائكم وحساباتكم الاجتماعية بضغطة زر [4]!</p>
         </div>
         <div class="relative z-10 shrink-0">
             <button type="button" @click="generateReport()" class="inline-flex items-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-950/40 transition-all hover:scale-105">
@@ -203,7 +203,7 @@
     <!-- =========================================================
          [بوابة المطورين والربط البرمجي للكاشير - Developer & API Portal] [1, 8]
     ========================================================== -->
-    <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-slate-100 p-6 mt-6">
+    {{-- <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-slate-100 p-6 mt-6">
         <h3 class="text-lg font-bold text-slate-900 mb-2">🔑 بوابة المطورين ومفاتيح الربط الإلكتروني (API Portal)</h3>
         <p class="text-xs text-slate-400 mb-6">قم بتوليد رموز وصول آمنة (API Tokens) لربط نظام كاشير الفندق أو المطعم (POS System) بـ جود لنشر الفائض آلياً [1, 8].</p>
 
@@ -241,7 +241,7 @@
                 <p>تأكد من تمرير المفتاح المولد كـ **`Bearer Token`** في الـ Headers الخاص بالطلب لحماية وأمان النشر [8]!</p>
             </div>
         </div>
-    </div>
+    </div> --}}
 
     <!-- المودال الزجاجي الفخم لعرض تقرير الاستدامة المولد (AI CSR Modal Display) -->
     <div x-show="openReport" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">

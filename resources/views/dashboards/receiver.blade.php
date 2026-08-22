@@ -102,7 +102,7 @@
                             </div>
                         </div>
 
-                        <!-- الخط الزمني -->
+                        <!-- الخط الزمني اللوجستي المطور -->
                         <div class="relative py-6">
                             <div class="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-1 bg-slate-100 rounded-full z-0"></div>
                             <div class="absolute right-4 top-1/2 -translate-y-1/2 h-1 bg-emerald-500 rounded-full transition-all duration-700 z-0" 
@@ -149,7 +149,7 @@
         @endif
     </div>
 
-    <!-- 2. قسم تصفح وحجز الوجبات المتاحة حالياً -->
+    <!-- 2. قسم تصفح وحجز الوجبات المتاحة حالياً (تم إعادة تفعيل الخريطة المؤمنة الارتفاع يدوياً) [10] -->
     <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-slate-100 p-6">
         <h3 class="text-lg font-bold text-slate-900 mb-2">التبرعات وفائض الأطعمة المتاحة حالياً</h3>
         <p class="text-xs text-slate-400 mb-4">عرض جغرافي حي على الخريطة التفاعلية للوجبات المتاحة حالياً حول منطقتك وسهولة حجزها.</p>
@@ -161,7 +161,7 @@
                 ->get();
         @endphp
 
-        <!-- [تأمين الأبعاد الثابتة يدوياً لمنع الاختفاء التام للخريطة عند التجميع] [10] -->
+        <!-- [تأمين الأبعاد الثابتة يدوياً لمنع الاختفاء التام للخريطة] [10] -->
         @if(!$availableListings->isEmpty())
             <div id="map" style="height: 320px; min-height: 320px; width: 100%;" class="rounded-2xl border border-slate-100 shadow-sm z-10 mb-6 relative"></div>
         @endif
@@ -198,11 +198,10 @@
                                 </span>
                             </div>
 
-                            <p class="text-xs text-slate-400 mt-2">الجهة المتبرعة: {{ $availableListing->user?->profile?->organization_name ?? $availableListing->user?->name }}</p>
+                            <p class="text-xs text-slate-400 mt-1">الجهة المتبرعة: {{ $availableListing->user?->profile?->organization_name ?? $availableListing->user?->name }}</p>
                             <p class="text-sm text-gray-700 mt-3 whitespace-pre-line leading-relaxed">{{ $availableListing->description ?? 'لا يوجد وصف إضافي.' }}</p>
                             
                             <div class="mt-4 space-y-2 text-xs text-slate-500">
-                                <div class="flex items-center">📦 الكمية المطلوبة: {{ $availableListing->quantity }}</div>
                                 <div class="flex items-center">🕒 صالح حتى: {{ $availableListing->expiry_time->format('Y-m-d H:i') }} ({{ $availableListing->expiry_time->diffForHumans() }})</div>
                                 <div class="flex items-center">📍 عنوان التواجد: {{ $availableListing->address }}</div>
                             </div>
@@ -236,7 +235,7 @@
         @endif
     </div>
 
-    <!-- 3. سجل المواد والوجبات المستلمة سابقاً -->
+    <!-- 3. سجل المواد والوجبات المستلمة سابقاً (محدث بضبط المحاذاة التامة للـ 6 أعمدة) -->
     <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-slate-100 p-6">
         <h3 class="text-lg font-bold text-slate-900 mb-4">سجل الوجبات والمواد المستلمة سابقاً</h3>
         
@@ -260,7 +259,7 @@
                             <th class="px-6 py-4 text-xs font-bold text-slate-500">الكمية الموفرة</th>
                             <th class="px-6 py-4 text-xs font-bold text-slate-500">تاريخ الاستلام الفعلي</th>
                             <th class="px-6 py-4 text-xs font-bold text-slate-500">الحالة</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500">الإيصال والتوثيق</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500">الإيصال والتوثيق</th> <!-- العمود السادس -->
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-slate-100">
@@ -299,7 +298,6 @@
 @if(!$availableListings->isEmpty())
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // تأمين ارتفاع الخريطة ليعمل مع Leaflet بنجاح
         var map = L.map('map').setView([31.5000, 34.4667], 12);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
