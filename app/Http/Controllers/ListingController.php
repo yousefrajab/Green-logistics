@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Listing;
+use App\Services\AIService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Services\AIService;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\NewListingNotification;
 
 class ListingController extends Controller
 {
@@ -16,7 +18,6 @@ class ListingController extends Controller
     {
         $user = Auth::user();
 
-        // حماية برمجية إضافية: فقط المتبرع النشط والموثق يمكنه الإضافة
         if ($user->role !== 'donor' || $user->status !== 'active') {
             return redirect()->route('dashboard')
                 ->with('error', 'عذراً، يجب أن يكون حسابك نشطاً وبصلاحية متبرع لتتمكن من إضافة إعلانات فائض.');
@@ -26,9 +27,9 @@ class ListingController extends Controller
     }
 
     /**
-     * حفظ الإعلان الجديد في قاعدة البيانات
+     * حفظ الشحنة الكلية والأصناف الفرعية المتعددة في قاعدة البيانات
      */
-    public function store(Request $request, AIService $aiService) // قمنا بحقن الخدمة هنا
+    public function store(Request $request, AIService $aiService)
     {
         $user = Auth::user();
 
@@ -37,130 +38,60 @@ class ListingController extends Controller
         }
 
         $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:1000'],
-            'quantity' => ['required', 'string', 'max:100'],
-            'category' => ['required', 'string', 'in:cooked,dry,fresh'],
-            'expiry_time' => ['required', 'date', 'after:now'],
+            'items' => ['required', 'array', 'min:1'], // مصفوفة الأصناف مطلوبة وبها صنف واحد على الأقل
+            'items.*.title' => ['required', 'string', 'max:255'],
+            'items.*.quantity' => ['required', 'string', 'max:100'],
+            'items.*.category' => ['required', 'string', 'in:cooked,dry,fresh'],
+            'items.*.expiry_time' => ['required', 'date', 'after:now'],
+            'items.*.description' => ['nullable', 'string', 'max:1000'],
+            
             'address' => ['required', 'string', 'max:500'],
+            'latitude' => ['nullable', 'numeric'],
+            'longitude' => ['nullable', 'numeric'],
+            'image' => ['nullable', 'image', 'max:3072'], // صورة الشحنة الكلية
         ]);
 
-        $description = $request->description;
-        $allergens = null;
+        $imagePath = null;
 
-        // إذا لم يكتب المتبرع وصفاً للوجبة، نطلق كود الذكاء الاصطناعي تلقائياً لصياغة الوصف واقتراح الحساسية
-        if (empty($description)) {
-            $aiResult = $aiService->generateDescriptionAndAllergens($request->title);
-
-            $description = $aiResult['description'];
-
-            // سنقوم بدمج تنبيه الحساسية في نهاية الوصف ليظهر بوضوح للجمعية المستلمة
-            if (!empty($aiResult['allergens'])) {
-                $description .= "\n\n⚠️ " . $aiResult['allergens'];
-            }
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('listings', 'public');
         }
 
-        $user->listings()->create([
-            'title' => $request->title,
-            'description' => $description, // الوصف الذكي المولد
-            'quantity' => $request->quantity,
-            'category' => $request->category,
-            'expiry_time' => $request->expiry_time,
+        // جلب بيانات الصنف الأول في المصفوفة لحفظها بالجدول الرئيسي لضمان التوافقية
+        $firstItem = $request->items[0];
+
+        // 1. إنشاء الشحنة الكبرى الأم (Listing)
+        $listing = $user->listings()->create([
+            'title' => $firstItem['title'],
+            'description' => $firstItem['description'] ?? 'شحنة فائض طعام متعددة.',
+            'quantity' => $firstItem['quantity'],
+            'category' => $firstItem['category'],
+            'expiry_time' => $firstItem['expiry_time'],
             'address' => $request->address,
-            'latitude' => $user->profile->latitude ?? 31.5000,
-            'longitude' => $user->profile->longitude ?? 34.4667,
+            'latitude' => $request->latitude ?? $user->profile->latitude ?? 31.5000,
+            'longitude' => $request->longitude ?? $user->profile->longitude ?? 34.4667,
+            'image_path' => $imagePath,
         ]);
 
-        return redirect()->route('dashboard')
-            ->with('success', 'تم نشر إعلان الفائض بنجاح! تم استخدام الذكاء الاصطناعي لصياغة الوصف والتحقق من مسببات الحساسية.');
-    }
-
-    /**
-     * تمكين الجمعية من حجز الوجبة الفائضة
-     */
-    public function reserve(Listing $listing)
-    {
-        $user = Auth::user();
-
-        // التحقق من أن الحساب بصلاحية جمعية (receiver) وأنه نشط
-        if ($user->role !== 'receiver' || $user->status !== 'active') {
-            return redirect()->back()->with('error', 'عذراً، يجب تفعيل حسابك كجمعية لتتمكن من حجز الوجبات.');
+        // 2. تكرار وحفظ جميع الأصناف الفرعية بالكامل بجدول listing_items الجديد [8]
+        foreach ($request->items as $item) {
+            $listing->items()->create([
+                'title' => $item['title'],
+                'quantity' => $item['quantity'],
+                'category' => $item['category'],
+                'expiry_time' => $item['expiry_time'],
+                'description' => $item['description'] ?? null,
+            ]);
         }
 
-        // التحقق من أن السلعة لا زالت متاحة ولم يحجزها أحد آخر بعد
-        if ($listing->status !== 'available') {
-            return redirect()->back()->with('error', 'عذراً، هذه الوجبة تم حجزها بالفعل من قِبل جهة أخرى.');
+        // 3. إرسال الإشعارات اللحظية لجميع الجمعيات لإنقاذ الشحنة
+        $allCharities = \App\Models\User::where('role', 'receiver')->get();
+        if ($allCharities->isNotEmpty()) {
+            Notification::send($allCharities, new NewListingNotification($listing));
         }
-
-        // تحديث حالة الوجبة وتسجيل معرف الجمعية المستلمة
-        $listing->update([
-            'status' => 'reserved',
-            'receiver_id' => $user->id,
-        ]);
 
         return redirect()->route('dashboard')
-            ->with('success', 'تم حجز الوجبة بنجاح! يرجى التنسيق للاستلام في أسرع وقت.');
-    }
-
-    /**
-     * قبول المندوب لتوصيل الطلب
-     */
-    public function acceptDelivery(Listing $listing)
-    {
-        $user = Auth::user();
-
-        if ($user->role !== 'driver' || $user->status !== 'active') {
-            return redirect()->back()->with('error', 'يجب تفعيل حسابك كمندوب لتتمكن من قبول الطلبات.');
-        }
-
-        if ($listing->status !== 'reserved' || !is_null($listing->driver_id)) {
-            return redirect()->back()->with('error', 'عذراً، هذا الطلب تم قبوله بالفعل من قِبل مندوب آخر.');
-        }
-
-        $listing->update([
-            'driver_id' => $user->id,
-        ]);
-
-        return redirect()->route('dashboard')
-            ->with('success', 'تم قبول طلب التوصيل بنجاح! يرجى التوجه لنقطة الاستلام.');
-    }
-
-    /**
-     * تأكيد استلام المندوب للشحنة من المتبرع (الفندق/المطعم)
-     */
-    public function pickupDelivery(Listing $listing)
-    {
-        $user = Auth::user();
-
-        if ($listing->driver_id !== $user->id) {
-            return redirect()->back()->with('error', 'عملية غير مصرح بها.');
-        }
-
-        $listing->update([
-            'status' => 'picked_up',
-        ]);
-
-        return redirect()->route('dashboard')
-            ->with('success', 'تم تأكيد استلام الشحنة من المتبرع. يرجى التوصيل بأمان.');
-    }
-
-    /**
-     * تأكيد تسليم المندوب للشحنة للجمعية واكتمال الطلب
-     */
-    public function completeDelivery(Listing $listing)
-    {
-        $user = Auth::user();
-
-        if ($listing->driver_id !== $user->id) {
-            return redirect()->back()->with('error', 'عملية غير مصرح بها.');
-        }
-
-        $listing->update([
-            'status' => 'completed',
-        ]);
-
-        return redirect()->route('dashboard')
-            ->with('success', 'رائع! تم تسليم الشحنة بنجاح واكتمال العملية الخيرية.');
+            ->with('success', 'تم نشر شحنة الفائض المتعددة بنجاح! تم حفظ كافة الأصناف في السلة وإشعار الجمعيات.');
     }
 
     /**
@@ -170,16 +101,18 @@ class ListingController extends Controller
     {
         $user = Auth::user();
 
-        // التحقق من أن المستخدم الحالي هو صاحب الإعلان نفسه، وأن الإعلان لم يتم تسليمه بعد
         if ($listing->user_id !== $user->id || $listing->status === 'completed') {
             return redirect()->route('dashboard')->with('error', 'غير مصرح لك بتعديل هذا الإعلان في حالته الحالية.');
         }
+
+        // تحميل الأصناف الفرعية المرتبطة بالشحنة مسبقاً لتمريرها للتعديل
+        $listing->load('items');
 
         return view('listings.edit', compact('listing', 'user'));
     }
 
     /**
-     * تحديث بيانات الإعلان في قاعدة البيانات
+     * تحديث الشحنة الكبرى وحذف وإعادة بناء الأصناف الفرعية المعدلة في قاعدة البيانات [8]
      */
     public function update(Request $request, Listing $listing)
     {
@@ -190,24 +123,57 @@ class ListingController extends Controller
         }
 
         $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:1000'],
-            'quantity' => ['required', 'string', 'max:100'],
-            'category' => ['required', 'string', 'in:cooked,dry,fresh'],
-            'expiry_time' => ['required', 'date', 'after:now'],
+            'items' => ['required', 'array', 'min:1'], // مصفوفة الأصناف مطلوبة بالتعديل أيضاً
+            'items.*.title' => ['required', 'string', 'max:255'],
+            'items.*.quantity' => ['required', 'string', 'max:100'],
+            'items.*.category' => ['required', 'string', 'in:cooked,dry,fresh'],
+            'items.*.expiry_time' => ['required', 'date', 'after:now'],
+            'items.*.description' => ['nullable', 'string', 'max:1000'],
+            
             'address' => ['required', 'string', 'max:500'],
+            'latitude' => ['nullable', 'numeric'],
+            'longitude' => ['nullable', 'numeric'],
+            'image' => ['nullable', 'image', 'max:3072'], // تعديل صورة الشحنة الكلية
         ]);
 
-        $listing->update($request->only([
-            'title',
-            'description',
-            'quantity',
-            'category',
-            'expiry_time',
-            'address'
-        ]));
+        $imagePath = $listing->image_path;
 
-        return redirect()->route('dashboard')->with('success', 'تم تحديث بيانات إعلان الفائض بنجاح.');
+        if ($request->hasFile('image')) {
+            if ($listing->image_path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($listing->image_path);
+            }
+            $imagePath = $request->file('image')->store('listings', 'public');
+        }
+
+        // جلب الصنف الأول المحدث لحفظه بالجدول الرئيسي لضمان التوافقية المستقرة [8]
+        $firstItem = $request->items[0];
+
+        // 1. تحديث بيانات الشحنة الكبرى الأم (Listing) [8]
+        $listing->update([
+            'title' => $firstItem['title'],
+            'description' => $firstItem['description'] ?? 'شحنة فائض طعام متعددة.',
+            'quantity' => $firstItem['quantity'],
+            'category' => $firstItem['category'],
+            'expiry_time' => $firstItem['expiry_time'],
+            'address' => $request->address,
+            'latitude' => $request->latitude ?? $listing->latitude,
+            'longitude' => $request->longitude ?? $listing->longitude,
+            'image_path' => $imagePath,
+        ]);
+
+        // 2. [حوكمة وتعديل السلة]: حذف الأصناف الفرعية القديمة بالكامل، وإعادة بناء وحفظ الأصناف الجديدة المحدثة [8]
+        $listing->items()->delete();
+        foreach ($request->items as $item) {
+            $listing->items()->create([
+                'title' => $item['title'],
+                'quantity' => $item['quantity'],
+                'category' => $item['category'],
+                'expiry_time' => $item['expiry_time'],
+                'description' => $item['description'] ?? null,
+            ]);
+        }
+
+        return redirect()->route('dashboard')->with('success', 'تم تحديث شحنة الفائض وكامل الأصناف بداخل السلة بنجاح.');
     }
 
     /**
@@ -221,7 +187,6 @@ class ListingController extends Controller
             return redirect()->route('dashboard')->with('error', 'غير مصرح لك بحذف هذا الإعلان.');
         }
 
-        // لا يمكن حذف الإعلان إذا كان جاري توصيله أو تم تسليمه (لحفظ الحقوق وتتبع المندوبين)
         if (in_array($listing->status, ['picked_up', 'completed'])) {
             return redirect()->route('dashboard')->with('error', 'لا يمكن حذف إعلان قيد التوصيل أو مكتمل بالفعل.');
         }
@@ -238,24 +203,67 @@ class ListingController extends Controller
     {
         $user = Auth::user();
 
-        // المسموح لهم بالإلغاء: صاحب الإعلان (المتبرع) أو الجمعية التي حجزته فقط
         if ($user->id !== $listing->user_id && $user->id !== $listing->receiver_id) {
             return redirect()->route('dashboard')->with('error', 'غير مصرح لك بإلغاء حجز هذا الطلب.');
         }
 
-        // يمكن الإلغاء فقط إذا كان الطلب "محجوزاً" أو "قيد التوصيل" ولم يكتمل بعد
         if (!in_array($listing->status, ['reserved', 'picked_up'])) {
             return redirect()->route('dashboard')->with('error', 'لا يمكن إلغاء الحجز في الحالة الحالية للطلب.');
         }
 
-        // إرجاع حالة الوجبة لتصبح "متاحة" مجدداً للجميع، وتصفير المندوب والجمعية
+        $driver = $listing->driver;
+        if ($driver) {
+            $driver->notify(new \App\Notifications\DeliveryCancelledNotification($listing));
+        }
+
         $listing->update([
             'status' => 'available',
             'receiver_id' => null,
             'driver_id' => null,
+            'verification_code' => null,
         ]);
 
         return redirect()->route('dashboard')
             ->with('success', 'تم إلغاء الحجز بنجاح وإعادة إتاحة الوجبة لجمعيات أخرى في المنصة.');
+    }
+
+    /**
+     * استقبال الصورة المرفوعة وتحليلها بالذكاء الاصطناعي البصري مع التحقق الأمني من المحتوى
+     */
+    public function analyzeImage(Request $request, AIService $aiService)
+    {
+        $request->validate([
+            'image' => ['required', 'image', 'mimes:jpeg,png,jpg,gif', 'max:3072'],
+        ]);
+
+        $result = $aiService->analyzeFoodImage($request->file('image'));
+
+        if (isset($result['is_food']) && $result['is_food'] === false) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['error_message'] ?? 'الصورة المرفوعة لا تحتوي على أطعمة صالحة للتبرع في المنصة.'
+            ], 422);
+        }
+
+        return response()->json(array_merge(['success' => true], $result));
+    }
+
+    /**
+     * جلب بيانات التبرعات الحقيقية وتوليد تقرير الأثر البيئي بالذكاء الاصطناعي
+     */
+    public function generateGreenReport(AIService $aiService)
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'donor') {
+            return response()->json(['error' => 'عملية غير مصرح بها.'], 403);
+        }
+
+        $organizationName = $user->profile?->organization_name ?? $user->name;
+        $completedCount = $user->listings()->where('status', 'completed')->count();
+
+        $reportData = $aiService->generateSustainabilityReport($organizationName, $completedCount);
+
+        return response()->json($reportData);
     }
 }

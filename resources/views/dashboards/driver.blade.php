@@ -12,7 +12,7 @@
         </div>
     @endif
 
-    <!-- 1. الشحنات النشطة الحالية (التي قبلها المندوب) -->
+    <!-- 1. الشحنات النشطة الحالية (التي قبلها المندوب وجاري العمل عليها) -->
     <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-slate-100 p-6">
         <h3 class="text-lg font-bold text-slate-900 mb-4">شحناتي النشطة الحالية</h3>
         
@@ -28,45 +28,65 @@
         @else
             <div class="grid grid-cols-1 gap-6">
                 @foreach($myActiveDeliveries as $delivery)
-                    <div class="border border-slate-100 rounded-2xl p-6 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center">
+                    <!-- مجهز بكلاس ومعرف التوجيه الذاتي والتوهج اللحظي -->
+                    <div id="listing-{{ $delivery->id }}" class="listing-card-target border border-slate-100 rounded-2xl p-6 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center scroll-mt-24 transition-all duration-300">
                         <div class="space-y-3">
                             <div class="flex items-center space-x-2 space-x-reverse">
                                 <h4 class="text-md font-bold text-slate-900">{{ $delivery->title }}</h4>
                                 @if($delivery->status === 'reserved')
-                                    <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-yellow-50 text-yellow-700 border border-yellow-200">توجه للاستلام</span>
+                                    <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-yellow-50 text-yellow-700 border border-yellow-200">تم القبول - توجه للاستلام</span>
                                 @else
                                     <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-blue-50 text-blue-700 border border-blue-200">قيد التوصيل للجمعية</span>
                                 @endif
                             </div>
                             <p class="text-xs text-slate-400 font-semibold">📦 الكمية: {{ $delivery->quantity }} | 📁 التصنيف: {{ $delivery->category }}</p>
                             
-                            <!-- مسار التوصيل المنسق كـ تذكرة شحن (تفاعلي رائع) -->
+                            <!-- مسار التوصيل المنسق كـ تذكرة شحن مع أزرار تتبع خرائط جوجل الملاحية للـ GPS -->
                             <div class="text-xs text-slate-600 space-y-2 pt-2 border-t border-slate-200/50">
                                 <div class="flex items-start">
                                     <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 ml-2 mt-1 shrink-0 animate-pulse"></span>
-                                    <p><strong>1. من المتبرع (الاستلام):</strong> <span class="font-bold text-slate-800">{{ $delivery->user?->profile?->organization_name ?? $delivery->user?->name }}</span> - العنوان: {{ $delivery->address }}</p>
+                                    <p>
+                                        <strong class="text-green-700">1. من المتبرع (الاستلام):</strong> 
+                                        <span class="font-bold text-slate-800">{{ $delivery->user?->profile?->organization_name ?? $delivery->user?->name }}</span> - العنوان: {{ $delivery->address }}
+                                        <!-- زر تتبع الاتجاهات للفندق بخرائط جوجل -->
+                                        <a href="https://www.google.com/maps/search/?api=1&query={{ $delivery->latitude ?? 31.5000 }},{{ $delivery->longitude ?? 34.4667 }}" target="_blank" class="text-emerald-600 hover:text-emerald-800 font-bold mr-2 inline-flex items-center">
+                                            🗺️ تتبع الاتجاهات
+                                        </a>
+                                    </p>
                                 </div>
                                 <div class="flex items-start">
                                     <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 ml-2 mt-1 shrink-0"></span>
-                                    <p><strong>2. إلى الجمعية (التسليم):</strong> <span class="font-bold text-slate-800">{{ $delivery->receiver?->profile?->organization_name ?? $delivery->receiver?->name }}</span> - العنوان: {{ $delivery->receiver?->profile?->address ?? 'عنوان الجمعية غير متوفر' }}</p>
+                                    <p>
+                                        <strong class="text-indigo-700">2. إلى الجمعية (التسليم):</strong> 
+                                        <span class="font-bold text-slate-800">{{ $delivery->receiver?->profile?->organization_name ?? $delivery->receiver?->name }}</span> - العنوان: {{ $delivery->receiver?->profile?->address ?? 'عنوان الجمعية غير متوفر' }}
+                                        <!-- زر تتبع الاتجاهات للجمعية بخرائط جوجل -->
+                                        <a href="https://www.google.com/maps/search/?api=1&query={{ $delivery->receiver?->profile?->latitude ?? 31.5000 }},{{ $delivery->receiver?->profile?->longitude ?? 34.4667 }}" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-bold mr-2 inline-flex items-center">
+                                            🗺️ تتبع الاتجاهات
+                                        </a>
+                                    </p>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- أزرار التوصيل الديناميكية -->
-                        <div class="mt-5 md:mt-0">
+                        <!-- أزرار التوصيل الديناميكية وتحويل الحالات -->
+                        <div class="mt-4 md:mt-0">
                             @if($delivery->status === 'reserved')
+                                <!-- خطوة 1: تأكيد الاستلام من الفندق -->
                                 <form method="POST" action="{{ route('listings.pickup-delivery', $delivery->id) }}">
                                     @csrf
-                                    <button type="submit" class="inline-flex items-center px-4 py-2.5 border border-transparent text-xs font-bold rounded-xl shadow-md shadow-amber-100 text-white bg-amber-500 hover:bg-amber-600 transition-colors">
+                                    <button type="submit" class="inline-flex items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700">
                                         تأكيد استلام الشحنة من المتبرع
                                     </button>
                                 </form>
                             @elseif($delivery->status === 'picked_up')
-                                <form method="POST" action="{{ route('listings.complete-delivery', $delivery->id) }}">
+                                <!-- خطوة 2 المحدثة: إدخال كود التوثيق لإكمال التوصيل بأمان -->
+                                <form method="POST" action="{{ route('listings.complete-delivery', $delivery->id) }}" class="flex flex-col sm:flex-row items-center gap-3">
                                     @csrf
-                                    <button type="submit" class="inline-flex items-center px-4 py-2.5 border border-transparent text-xs font-bold rounded-xl shadow-md shadow-emerald-100 text-white bg-emerald-600 hover:bg-emerald-700 transition-colors">
-                                        تأكيد تسليم الشحنة للجمعية (اكتمل)
+                                    <div>
+                                        <input type="text" name="verification_code" required placeholder="أدخل رمز الاستلام (4 أرقام)" class="text-xs font-bold border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl py-2.5 px-4 w-48 text-center bg-white shadow-sm">
+                                    </div>
+                                    <button type="submit" class="inline-flex items-center px-4 py-2.5 border border-transparent text-xs font-bold rounded-xl shadow-md shadow-emerald-100 text-white bg-green-600 hover:bg-green-700 transition-colors">
+                                        تأكيد تسليم الشحنة واكتمالها
                                     </button>
                                 </form>
                             @endif
@@ -90,21 +110,30 @@
         @endphp
 
         @if($availableDeliveries->isEmpty())
-            <div class="text-center py-12 border border-dashed border-slate-200 rounded-2xl">
-                <p class="text-sm text-slate-400">لا توجد طلبات توصيل معلقة حالياً في المنصة.</p>
+            <div class="text-center py-8 border border-dashed border-gray-200 rounded-lg">
+                <p class="text-sm text-gray-500">لا توجد طلبات توصيل معلقة حالياً في المنصة.</p>
             </div>
         @else
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 @foreach($availableDeliveries as $delivery)
-                    <div class="border border-slate-100 rounded-2xl p-5 bg-slate-50/50 flex flex-col justify-between hover:shadow-md transition-all duration-300">
-                        <div class="space-y-3">
+                    <!-- مجهز بكلاس ومعرف التوجيه الذاتي والتوهج اللحظي -->
+                    <div id="listing-{{ $delivery->id }}" class="listing-card-target border border-slate-100 rounded-2xl p-5 bg-slate-50/50 flex flex-col justify-between hover:shadow-md transition-all duration-300 scroll-mt-24">
+                        <div>
                             <h4 class="text-md font-bold text-slate-900">{{ $delivery->title }}</h4>
-                            <p class="text-xs text-slate-400 font-semibold">📦 الكمية: {{ $delivery->quantity }} | 🕒 صالح حتى: {{ $delivery->expiry_time->format('Y-m-d H:i') }}</p>
+                            <p class="text-xs text-slate-400 mt-1">📦 الكمية: {{ $delivery->quantity }} | 🕒 صالح حتى: {{ $delivery->expiry_time->format('Y-m-d H:i') }}</p>
                             
-                            <!-- جهات الاستلام والتسليم -->
-                            <div class="mt-4 pt-3 border-t border-slate-200/60 space-y-2 text-xs text-slate-600">
-                                <p><strong>📍 نقطة الاستلام:</strong> {{ $delivery->user?->profile?->organization_name ?? $delivery->user?->name }} ({{ $delivery->address }})</p>
-                                <p><strong>🏁 نقطة التسليم:</strong> {{ $delivery->receiver?->profile?->organization_name ?? $delivery->receiver?->name }} ({{ $delivery->receiver?->profile?->address ?? 'مقر الجمعية' }})</p>
+                            <!-- جهات الاستلام والتسليم المأمنة مع روابط خرائط جوجل للمعاينة المسبقة للمسار -->
+                            <div class="mt-4 space-y-2 text-xs text-slate-600 border-t border-slate-200/60 pt-3">
+                                <p>
+                                    <strong>📍 نقطة الاستلام:</strong> 
+                                    {{ $delivery->user?->profile?->organization_name ?? $delivery->user?->name }} ({{ $delivery->address }})
+                                    <a href="https://www.google.com/maps/search/?api=1&query={{ $delivery->latitude ?? 31.5000 }},{{ $delivery->longitude ?? 34.4667 }}" target="_blank" class="text-emerald-600 hover:text-emerald-800 font-bold mr-1.5">🗺️ معاينة الاستلام</a>
+                                </p>
+                                <p>
+                                    <strong>🏁 نقطة التسليم:</strong> 
+                                    {{ $delivery->receiver?->profile?->organization_name ?? $delivery->receiver?->name }} ({{ $delivery->receiver?->profile?->address ?? 'مقر الجمعية' }})
+                                    <a href="https://www.google.com/maps/search/?api=1&query={{ $delivery->receiver?->profile?->latitude ?? 31.5000 }},{{ $delivery->receiver?->profile?->longitude ?? 34.4667 }}" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-bold mr-1.5">🗺️ معاينة التسليم</a>
+                                </p>
                             </div>
                         </div>
 
@@ -112,7 +141,7 @@
                             @if(Auth::user()->status === 'active')
                                 <form method="POST" action="{{ route('listings.accept-delivery', $delivery->id) }}">
                                     @csrf
-                                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-xs font-bold rounded-xl shadow-md shadow-indigo-100 text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
+                                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-xs font-bold rounded-xl shadow-md shadow-indigo-100 text-white bg-indigo-600 hover:bg-indigo-700">
                                         قبول مهمة التوصيل
                                     </button>
                                 </form>
@@ -156,7 +185,7 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-slate-100">
                         @foreach($myCompletedDeliveries as $delivery)
-                            <tr>
+                            <tr class="hover:bg-slate-50/30 transition-colors">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900">{{ $delivery->title }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{{ $delivery->user?->profile?->organization_name ?? $delivery->user?->name }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{{ $delivery->receiver?->profile?->organization_name ?? $delivery->receiver?->name }}</td>

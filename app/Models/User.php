@@ -2,19 +2,18 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens; // [تحديث أمني]: استيراد سمة تفعيل رموز الـ API من Sanctum [1]
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    // [تحديث أمني]: تفعيل السمة داخل الكلاس لتوليد وحفظ مفاتيح الربط الذكية [1]
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
+     * الحقول المسموح بتعبئتها في قاعدة البيانات
      */
     protected $fillable = [
         'name',
@@ -25,9 +24,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
+     * الحقول المخفية لأسباب أمنية
      */
     protected $hidden = [
         'password',
@@ -35,9 +32,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * تحويل صياغة البيانات تلقائياً
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
@@ -53,10 +48,10 @@ class User extends Authenticatable
     }
 
     /**
-     * علاقة المتبرع بالإعلانات (One-to-Many)
+     * علاقة المتبرع بالإعلانات والشحنات (One-to-Many)
      */
     public function listings()
     {
-        return $this->hasMany(Listing::class);
+        return $this->hasMany(Listing::class, 'user_id');
     }
 }

@@ -1,4 +1,4 @@
-<div class="space-y-6" dir="rtl">
+<div class="space-y-6" dir="rtl" x-data="greenReportComponent()">
     
     <!-- إشعار النجاح عند إضافة أو تعديل أو تراجع عن إعلان -->
     @if(session('success'))
@@ -26,7 +26,23 @@
         </div>
     @endif
 
-    <!-- كروت الإحصائيات الحديثة بتأثيرات تمرير ناعمة -->
+    <!-- [تكامل تقرير الأثر البيئي والاستدامة بالذكاء الاصطناعي - AI Green CSR Card] [4] -->
+    <div class="bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-950 p-6 rounded-2xl border border-emerald-900/40 shadow-lg text-white mb-6 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        
+        <div class="space-y-1 relative z-10">
+            <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">مبادرة الفنادق الخضراء المستدامة</span>
+            <h3 class="text-md font-bold text-white mt-2">تقرير الأثر المسؤول ومكافحة هدر الغذاء (AI Green Report)</h3>
+            <p class="text-xs text-slate-400 max-w-2xl">دع الذكاء الاصطناعي يحلل إحصائيات تبرعاتك الحقيقية ويصيغ لك تقرير المسؤولية المجتمعية (CSR) الخاص بمنشأتكم فوراً لعرضه ومشاركته أمام عملائكم وحساباتكم الاجتماعية بضغطة زر [4]!</p>
+        </div>
+        <div class="relative z-10 shrink-0">
+            <button type="button" @click="generateReport()" class="inline-flex items-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-950/40 transition-all hover:scale-105">
+                🪄 توليد تقرير الاستدامة والـ CSR
+            </button>
+        </div>
+    </div>
+
+    <!-- كروت الإحصائيات الحديثة بتأثيرات تمرير ناعمة وبوجود زر التقرير اللطيف المدمج -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- كرت إجمالي التبرعات -->
         <div class="bg-white overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl border border-slate-100 p-6 flex items-center justify-between">
@@ -54,11 +70,17 @@
             </div>
         </div>
 
-        <!-- كرت عمليات مكتملة -->
+        <!-- كرت عمليات مكتملة المطور والمدمج به ذكاء تقارير الاستدامة -->
         <div class="bg-white overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl border border-slate-100 p-6 flex items-center justify-between">
             <div class="space-y-1">
                 <p class="text-xs font-semibold text-slate-400">عمليات توصيل مكتملة</p>
                 <p class="text-3xl font-extrabold text-blue-600">{{ Auth::user()->listings->where('status', 'completed')->count() }}</p>
+                
+                @if(Auth::user()->listings->where('status', 'completed')->count() > 0)
+                    <button type="button" @click="generateReport()" class="text-[10px] font-bold text-emerald-600 hover:text-emerald-800 flex items-center mt-1 animate-pulse focus:outline-none">
+                        🪄 عرض تقرير الاستدامة والـ CSR
+                    </button>
+                @endif
             </div>
             <div class="p-3.5 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/50">
                 <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,20 +116,20 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                 </svg>
                 <h3 class="mt-4 text-sm font-bold text-slate-800">لا يوجد إعلانات فائض حالية</h3>
-                <p class="mt-1 text-xs text-slate-400">ابدأ بمشاركة الفائض للمساهمة في حفظ النعمة ومساعدة المحتاجين.</p>
+                <p class="mt-1 text-sm text-gray-500">ابدأ بمشاركة الفائض للمساهمة في حفظ النعمة ومساعدة المحتاجين.</p>
             </div>
         @else
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-100 text-right">
                     <thead class="bg-slate-50/50 rounded-xl">
                         <tr>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">عنوان الإعلان</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">الكمية</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">التصنيف</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">صالح لغاية</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">الحالة</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">تاريخ النشر</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">الإجراءات</th>
+                            <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">عنوان الإعلان</th>
+                            <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">الكمية</th>
+                            <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">التصنيف</th>
+                            <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">صالح لغاية</th>
+                            <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">الحالة</th>
+                            <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">تاريخ النشر</th>
+                            <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">الإجراءات</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-slate-100">
@@ -118,7 +140,7 @@
                                     <div class="text-xs text-slate-400 truncate max-w-xs mt-0.5">{{ $listing->description ?? 'بدون وصف إضافي' }}</div>
                                     
                                     @if($listing->driver_id)
-                                        <div class="text-[11px] text-emerald-600 font-semibold mt-1.5 flex items-center">
+                                        <div class="text-[11px] text-indigo-600 font-semibold mt-1.5 flex items-center">
                                             🚚 المندوب: {{ $listing->driver?->name }} (هاتف: {{ $listing->driver?->profile?->phone ?? 'غير متوفر' }})
                                         </div>
                                     @endif
@@ -162,6 +184,10 @@
                                             @csrf
                                             <button type="submit" class="text-amber-600 hover:text-amber-900 transition-colors">تراجع وإلغاء</button>
                                         </form>
+                                    @elseif($listing->status === 'completed')
+                                        <a href="{{ route('listings.receipt', $listing->id) }}" target="_blank" class="text-emerald-600 hover:text-emerald-900 transition-colors">
+                                            📋 تحميل الإيصال
+                                        </a>
                                     @else
                                         <span class="text-slate-300">-</span>
                                     @endif
@@ -173,4 +199,136 @@
             </div>
         @endif
     </div>
+
+    <!-- =========================================================
+         [بوابة المطورين والربط البرمجي للكاشير - Developer & API Portal] [1, 8]
+    ========================================================== -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-slate-100 p-6 mt-6">
+        <h3 class="text-lg font-bold text-slate-900 mb-2">🔑 بوابة المطورين ومفاتيح الربط الإلكتروني (API Portal)</h3>
+        <p class="text-xs text-slate-400 mb-6">قم بتوليد رموز وصول آمنة (API Tokens) لربط نظام كاشير الفندق أو المطعم (POS System) بـ جود لنشر الفائض آلياً [1, 8].</p>
+
+        <!-- عرض الرمز المولد لمرة واحدة فقط لأسباب أمنية شديدة -->
+        @if(session('success_token'))
+            <div class="bg-emerald-50 border border-emerald-100 p-5 rounded-xl mb-6 space-y-2">
+                <p class="text-xs font-bold text-emerald-800">🚨 تنبيه أمني هام جداً:</p>
+                <p class="text-xs text-slate-600">هذا هو رمز الوصول الآمن الخاص بك لربط نظام الكاشير الخارجي. **قم بنسخه وحفظه الآن في مكان آمن**؛ فلن يظهر لك هذا الرمز مرة أخرى مطلقاً حمايةً لخصوصية حسابك [8]:</p>
+                <div class="flex items-center space-x-2 space-x-reverse pt-2">
+                    <input type="text" readonly value="{{ session('success_token') }}" id="api-token-input" class="bg-white border border-slate-200 text-slate-800 font-mono text-xs rounded-xl py-2 px-4 flex-grow select-all">
+                    <button type="button" onclick="navigator.clipboard.writeText('{{ session('success_token') }}'); alert('🟢 تم نسخ الرمز بنجاح!')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all">نسخ الرمز</button>
+                </div>
+            </div>
+        @endif
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            <!-- فورم توليد رمز جديد -->
+            <form method="POST" action="{{ route('donor.tokens.generate') }}" class="space-y-4">
+                @csrf
+                <div>
+                    <x-input-label for="token_name" :value="__('اسم مفتاح الربط (مثال: كاشير بوفيه الغداء)')" class="text-xs font-bold text-slate-700" />
+                    <x-text-input id="token_name" name="token_name" type="text" class="block mt-1 w-full" required placeholder="اكتب اسماً تعريفياً للرمز" />
+                    <x-input-error :messages="$errors->get('token_name')" class="mt-2" />
+                </div>
+                <x-primary-button class="bg-emerald-600 hover:bg-emerald-700 py-2 px-6 rounded-xl text-xs font-bold">
+                    ⚙️ توليد مفتاح ربط آمن (Token)
+                </x-primary-button>
+            </form>
+
+            <!-- معلومات توثيق الـ API للمبرمجين -->
+            <div class="p-5 bg-slate-50 border border-slate-100 rounded-2xl text-xs text-slate-600 space-y-3 leading-relaxed">
+                <h4 class="font-bold text-slate-900">📄 دليل التوثيق السريع لربط الـ API:</h4>
+                <p>قم بإرسال طلب من نوع **`POST`** إلى المسار التالي للربط المباشر [1]:</p>
+                <code class="block bg-slate-950 text-emerald-400 p-2.5 rounded-xl font-mono text-[10px] break-all">POST: http://127.0.0.1:8000/api/v1/listings</code>
+                <p>تأكد من تمرير المفتاح المولد كـ **`Bearer Token`** في الـ Headers الخاص بالطلب لحماية وأمان النشر [8]!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- المودال الزجاجي الفخم لعرض تقرير الاستدامة المولد (AI CSR Modal Display) -->
+    <div x-show="openReport" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div @click.away="openReport = false" class="bg-white rounded-3xl max-w-2xl w-full border border-slate-100 p-8 shadow-2xl relative text-right">
+            
+            <div x-show="loadingReport" class="flex flex-col items-center justify-center space-y-4 py-12">
+                <div class="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-xs font-bold text-slate-800 animate-pulse">جاري تحليل الأثر اللوجستي والبيئي الحقيقي لتبرعاتكم...</p>
+            </div>
+
+            <div x-show="!loadingReport" class="space-y-6">
+                <div class="flex justify-between items-center pb-4 border-b border-slate-100">
+                    <h4 class="text-lg font-bold text-slate-900 flex items-center">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 ml-2 animate-pulse"></span>
+                        تقرير الأثر البيئي والمسؤولية المجتمعية (CSR)
+                    </h4>
+                    <button type="button" @click="openReport = false" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-emerald-50/50 border border-emerald-100/50 p-4 rounded-xl text-center">
+                        <p class="text-[10px] text-emerald-800 font-bold">💨 غاز ثاني أكسيد الكربون (CO2) المحفوظ</p>
+                        <p class="text-lg font-extrabold text-emerald-600 mt-1" x-text="co2"></p>
+                    </div>
+                    <div class="bg-blue-50/50 border border-blue-100/50 p-4 rounded-xl text-center">
+                        <p class="text-[10px] text-blue-800 font-bold">💧 مياه عذبة تم توفيرها في سلاسل الإنتاج</p>
+                        <p class="text-lg font-extrabold text-blue-600 mt-1" x-text="water"></p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl">
+                    <p class="text-xs text-slate-700 leading-relaxed font-semibold whitespace-pre-line text-justify animate-fade-in" x-text="reportText"></p>
+                </div>
+
+                <div class="flex justify-between items-center pt-4 border-t border-slate-100">
+                    <a href="{{ route('donor.green-report.print') }}" target="_blank" class="inline-flex items-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-50 transition-all hover:scale-105">
+                        🖨️ طباعة وتحميل الشهادة الرسمية (PDF)
+                    </a>
+                    <button type="button" @click="openReport = false" class="text-xs font-bold text-slate-500 hover:text-slate-800">
+                        إإغلاق النافذة
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+<script>
+    function greenReportComponent() {
+        return {
+            openReport: false,
+            loadingReport: false,
+            co2: '',
+            water: '',
+            reportText: '',
+            generateReport() {
+                this.loadingReport = true;
+                this.openReport = true;
+                
+                var self = this;
+                
+                fetch('{{ route('donor.green-report') }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('فشلت عملية الاتصال بخدمة توليد التقارير البيئية.');
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    self.co2 = data.co2_saved;
+                    self.water = data.water_saved;
+                    self.reportText = data.report_text;
+                })
+                .catch(function(error) {
+                    console.error('Error generating report:', error);
+                    self.reportText = 'عذراً، فشل الاتصال بخدمة توليد التقارير البيئية والمسؤولية المجتمعية.';
+                })
+                .finally(function() {
+                    self.loadingReport = false;
+                });
+            }
+        }
+    }
+</script>

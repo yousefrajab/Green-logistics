@@ -8,20 +8,30 @@
                 <p class="mt-2 text-sm leading-7 text-slate-500">سجل الدخول للوصول إلى لوحة التحكم الخاصة بك.</p>
             </div>
 
-            <!-- Theme -->
-            <button type="button" class="hidden h-11 w-11 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 sm:flex">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707.707M12 7a5 5 0 100 10 5 5 0 000-10z" />
+            <!-- زر الإضاءة والتبديل بين الفاتح والداكن (الآن يعمل بالكامل بـ Alpine.js!) -->
+            <button
+                type="button"
+                @click="darkMode = !darkMode"
+                class="h-11 w-11 flex items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+                <!-- أيقونة الشمس (تظهر فقط في الوضع الداكن للرجوع للفاتح) -->
+                <svg x-show="darkMode" class="h-5 w-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707.707M12 7a5 5 0 100 10 5 5 0 000-10z" />
+                </svg>
+                <!-- أيقونة القمر (تظهر فقط في الوضع الفاتح للانتقال للداكن) -->
+                <svg x-show="!darkMode" class="h-5 w-5 text-slate-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                 </svg>
             </button>
         </div>
     </div>
 
+
     <!-- ================= SESSION STATUS ================= -->
     <x-auth-session-status class="mb-5" :status="session('status')" />
 
+
     <!-- ================= LOGIN FORM ================= -->
-    <!-- التبويبات المحدثة والمطابقة لصفحة التسجيل لتجنب أي تشتت -->
     <div x-data="{ activeRole: 'donor' }">
         <form method="POST" action="{{ route('login') }}" class="space-y-5">
             @csrf
@@ -31,18 +41,7 @@
                 <label class="mb-2 block text-sm font-semibold text-slate-700">نوع الحساب</label>
                 <div class="grid grid-cols-3 overflow-hidden rounded-xl border border-slate-200 bg-white">
                     
-                    <!-- Donor (جهة متبرعة) -->
-                    <button type="button" @click="activeRole = 'donor'"
-                        :class="activeRole === 'donor' ? 'bg-emerald-50 text-emerald-700 border-l border-emerald-500' : 'text-slate-500 hover:bg-slate-50 border-l border-slate-200'"
-                        class="flex min-h-[74px] flex-col items-center justify-center gap-1 transition"
-                    >
-                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M3 21h18M5 21V9h14v12M8 9V5h8v4" />
-                        </svg>
-                        <span class="text-xs font-bold">جهة متبرعة</span>
-                    </button>
-
-                    <!-- Receiver (جهة مستلمة) -->
+                    <!-- Admin (جهة مستلمة) -->
                     <button type="button" @click="activeRole = 'receiver'"
                         :class="activeRole === 'receiver' ? 'bg-emerald-50 text-emerald-700 border-l border-emerald-500' : 'text-slate-500 hover:bg-slate-50 border-l border-slate-200'"
                         class="flex min-h-[74px] flex-col items-center justify-center gap-1 transition"
@@ -50,10 +49,21 @@
                         <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5" />
                         </svg>
-                        <span class="text-xs font-semibold">جهة مستلمة</span>
+                        <span class="text-xs font-bold">جهة مستلمة</span>
                     </button>
 
-                    <!-- Driver (مندوب توصيل) -->
+                    <!-- Partner (جهة متبرعة) -->
+                    <button type="button" @click="activeRole = 'donor'"
+                        :class="activeRole === 'donor' ? 'bg-emerald-50 text-emerald-700 border-l border-emerald-500' : 'text-slate-500 hover:bg-slate-50 border-l border-slate-200'"
+                        class="flex min-h-[74px] flex-col items-center justify-center gap-1 transition"
+                    >
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M3 21h18M5 21V9h14v12M8 9V5h8v4" />
+                        </svg>
+                        <span class="text-xs font-semibold">جهة متبرعة</span>
+                    </button>
+
+                    <!-- Driver -->
                     <button type="button" @click="activeRole = 'driver'"
                         :class="activeRole === 'driver' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500 hover:bg-slate-50'"
                         class="flex min-h-[74px] flex-col items-center justify-center gap-1 transition"
@@ -126,25 +136,27 @@
                 </x-primary-button>
             </div>
 
-            <!-- ================= SOCIAL LOGIN ================= -->
+            <!-- ================= SOCIAL LOGIN (الآن جاهزة ومربوطة بالروابط الرسمية) ================= -->
             <div class="relative py-3">
                 <div class="absolute inset-0 flex items-center">
                     <div class="w-full border-t border-slate-100"></div>
                 </div>
                 <div class="relative flex justify-center">
-                    <span class="bg-white px-4 text-xs text-slate-400">أو سجل الدخول باستخدام</span>
+                    <span class="bg-white dark:bg-[#0b1523] transition-colors duration-300 px-4 text-xs text-slate-400">أو سجل الدخول باستخدام</span>
                 </div>
             </div>
 
+            <!-- أزرار جوجل ومايكروسوفت التفاعلية للربط المستقبلي بـ Laravel Socialite -->
             <div class="grid grid-cols-2 gap-3">
-                <button type="button" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                <a href="/auth/google/redirect" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800">
                     <span class="font-bold text-lg">G</span>
                     Google
-                </button>
-                <button type="button" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                </a>
+
+                <a href="/auth/microsoft/redirect" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800">
                     <span class="font-bold text-lg">▦</span>
                     Microsoft
-                </button>
+                </a>
             </div>
 
             <!-- ================= REGISTER ================= -->
